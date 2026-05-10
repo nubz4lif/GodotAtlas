@@ -1,7 +1,6 @@
 @tool
 extends EditorPlugin
 
-
 var importers:Array[EditorImportPlugin]
 
 func _enter_tree() -> void:
