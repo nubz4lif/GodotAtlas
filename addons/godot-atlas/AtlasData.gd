@@ -17,6 +17,8 @@ static func load_xml(path:String) -> AtlasData:
 	var texture: Texture2D
 	var image: Image
 
+	var frames:Dictionary[AtlasAnimationData, Dictionary]
+
 	var regex = RegEx.create_from_string(frame_regex)
 	while xml.read() == OK:
 		if xml.get_node_type() != XMLParser.NODE_ELEMENT:
@@ -54,7 +56,7 @@ static func load_xml(path:String) -> AtlasData:
 			Vector2i(xml.get_named_attribute_value_safe('frameWidth').to_int(), xml.get_named_attribute_value_safe('frameHeight').to_int())
 		)
 
-		var name:StringName = str(xml.get_named_attribute_value_safe('name'))
+		var name:StringName = str(xml.get_named_attribute_value_safe('name')).strip_edges()
 		var frame:int = 0
 
 		var result:RegExMatch = regex.search(name)
@@ -102,10 +104,16 @@ static func load_xml(path:String) -> AtlasData:
 				atlas.margin = margin
 
 		var animation:AtlasAnimationData = atlas_data.animations.get_or_add(name, AtlasAnimationData.new())
-		if frame < animation.frames.size():
-			animation.frames.insert(frame, atlas)
-		else:
-			animation.frames.push_back(atlas)
+		#if frame >= animation.frames.size(): animation.frames.resize(frame) # This is the lazy way of doing this, as it may create larger than intended arrays when the frame indices are messed up
+		frames.get_or_add(animation, {}).set(frame, atlas)
+
+	# Trim indices in case there are any nulls (as a result of resizing)
+	for animation in frames.keys():
+		var animation_frames = frames.get(animation)
+
+		animation_frames.sort()
+		for animation_frame in animation_frames.values():
+			animation.frames.push_back(animation_frame)
 
 
 	return atlas_data
